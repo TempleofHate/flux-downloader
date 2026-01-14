@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Flux Downloader - Baixe vídeos com facilidade{% endblock %}</title>
+    
+    <!-- Fontes Humanizadas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌀</text></svg>">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Partículas de fundo -->
+    <div class="particles-container" id="particles"></div>
+    
+    <!-- Botão de Tema -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema">
+        <span class="sun">☀️</span>
+        <span class="moon">🌙</span>
+        <div class="toggle-slider"></div>
+    </button>
+    
+    <!-- Decoração orgânica -->
+    <div class="organic-shape shape-1"></div>
+    <div class="organic-shape shape-2"></div>
+    <div class="organic-shape shape-3"></div>
+    
+    <div class="app-container">
+        <!-- Cabeçalho com personalidade -->
+        <header class="main-header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon">🌀</span>
+                    <span class="logo-text">Flux</span>
+                    <span class="logo-sub">downloader</span>
+                </h1>
+                
+                <div class="tagline">
+                    <p>Baixe vídeos com <span class="highlight">facilidade</span>, sem complicações</p>
+                    <div class="tagline-decoration">
+                        <span class="dot"></span>
+                        <span class="line"></span>
+                        <span class="dot"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Container principal -->
+        <main class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="messages-container">
+                        {% for category, message in messages %}
+                            <div class="message message-{{ category }} animate-in">
+                                <div class="message-icon">
+                                    {% if category == 'success' %}
+                                        <i class="fas fa-seedling"></i>
+                                    {% else %}
+                                        <i class="fas fa-cloud-rain"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="message-content">
+                                    {{ message }}
+                                </div>
+                                <button class="message-close" aria-label="Fechar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </main>
+        
+        <!-- Rodapé -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3><i class="fas fa-code"></i> Desenvolvido por João Pedro</h3>
+                    <p>Esta ferramenta foi criada para facilitar o download de conteúdos de forma simples e eficiente.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3><i class="fas fa-hand-peace"></i> Use com responsabilidade</h3>
+                    <p>Respeite criadores e direitos autorais. Use para backup pessoal ou conteúdos que você tem permissão.</p>
+                </div>
+                
+                <div class="footer-links">
+                    <a href="#" class="footer-link" data-tooltip="Em breve">
+                        <i class="fas fa-history"></i> Histórico
+                    </a>
+                    <a href="#" class="footer-link" data-tooltip="Em breve">
+                        <i class="fas fa-cog"></i> Configurações
+                    </a>
+                    <a href="/cleanup" class="footer-link">
+                        <i class="fas fa-broom"></i> Limpar downloads
+                    </a>
+                    <a href="/help" class="footer-link">
+                        <i class="fas fa-question-circle"></i> Ajuda
+                    </a>
+                </div>
+                
+                <div class="footer-bottom">
+                    <p class="footnote">
+                        <i class="fas fa-heart"></i> Criado com dedicação por João Pedro
+                    </p>
+                    <div class="human-signature">
+                        <span class="signature-line"></span>
+                        <span class="signature-text">Feito por João Pedro</span>
+                        <span class="signature-line"></span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/particle-effect.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Restaurar tema
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // Microinteração: clique nos cards
+            document.querySelectorAll('.card, .option-btn').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (!e.target.closest('a') && !e.target.closest('button')) {
+                        this.style.transform = 'scale(0.98)';
+                        setTimeout(() => {
+                            this.style.transform = '';
+                        }, 150);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

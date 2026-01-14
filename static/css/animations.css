@@ -1,0 +1,312 @@
+/* Animações suaves e orgânicas */
+
+/* Pulsação suave para elementos importantes */
+@keyframes gentle-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+}
+
+.gentle-pulse {
+    animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+/* Ondulação para elementos de fundo */
+@keyframes wave {
+    0%, 100% {
+        transform: translateX(0) translateY(0);
+    }
+    25% {
+        transform: translateX(5px) translateY(-5px);
+    }
+    50% {
+        transform: translateX(-5px) translateY(5px);
+    }
+    75% {
+        transform: translateX(5px) translateY(5px);
+    }
+}
+
+.wave-effect {
+    animation: wave 20s ease-in-out infinite;
+}
+
+/* Fade in com escala */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.fade-in-scale {
+    animation: fadeInScale 0.5s var(--ease-bounce);
+}
+
+/* Deslizar da esquerda */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.5s ease-out;
+}
+
+/* Deslizar da direita */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+}
+
+/* Rotação suave */
+@keyframes gentle-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.gentle-rotate {
+    animation: gentle-rotate 20s linear infinite;
+}
+
+/* Brilho sutil */
+@keyframes gentle-glow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(124, 58, 237, 0.2);
+    }
+}
+
+.glow-effect {
+    animation: gentle-glow 3s ease-in-out infinite;
+}
+
+/* Flutuação vertical */
+@keyframes float-vertical {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.float-vertical {
+    animation: float-vertical 3s ease-in-out infinite;
+}
+
+/* Piscar suave */
+@keyframes gentle-blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.blink-effect {
+    animation: gentle-blink 2s ease-in-out infinite;
+}
+
+/* Efeito de digitação */
+@keyframes typing {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+    }
+}
+
+@keyframes blink-caret {
+    from, to {
+        border-color: transparent;
+    }
+    50% {
+        border-color: var(--primary);
+    }
+}
+
+.typing-effect {
+    overflow: hidden;
+    border-right: 3px solid var(--primary);
+    white-space: nowrap;
+    animation: 
+        typing 3.5s steps(40, end),
+        blink-caret 0.75s step-end infinite;
+}
+
+/* Efeito de partículas de confete */
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 20px;
+    background: var(--primary);
+    top: -20px;
+    animation: confetti-fall 5s linear forwards;
+    z-index: 1000;
+}
+
+/* Efeito de onda expansiva */
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(124, 58, 237, 0.3);
+    animation: ripple 1s linear;
+}
+
+/* Efeito de neve (para loading) */
+@keyframes snow-fall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg);
+    }
+}
+
+.snowflake {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    opacity: 0.5;
+    animation: snow-fall 10s linear infinite;
+}
+
+/* Efeito de respiração para cards */
+@keyframes breathe {
+    0%, 100% {
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+        box-shadow: 0 20px 60px -10px rgba(124, 58, 237, 0.2);
+    }
+}
+
+.breathing-card {
+    animation: breathe 4s ease-in-out infinite;
+}
+
+/* Efeito de desfoque de entrada */
+@keyframes blur-in {
+    from {
+        filter: blur(10px);
+        opacity: 0;
+    }
+    to {
+        filter: blur(0);
+        opacity: 1;
+    }
+}
+
+.blur-in {
+    animation: blur-in 0.8s ease-out;
+}
+
+/* Efeito de borboleta (flutuação aleatória) */
+@keyframes butterfly {
+    0%, 100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    25% {
+        transform: translate(10px, -10px) rotate(5deg);
+    }
+    50% {
+        transform: translate(-5px, 5px) rotate(-5deg);
+    }
+    75% {
+        transform: translate(-10px, -5px) rotate(3deg);
+    }
+}
+
+.butterfly-effect {
+    animation: butterfly 15s ease-in-out infinite;
+}
+
+/* Classes utilitárias de animação */
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.delay-1 {
+    animation-delay: 0.1s;
+}
+
+.delay-2 {
+    animation-delay: 0.2s;
+}
+
+.delay-3 {
+    animation-delay: 0.3s;
+}
+
+.duration-slow {
+    animation-duration: 0.8s;
+}
+
+.duration-fast {
+    animation-duration: 0.3s;
+}

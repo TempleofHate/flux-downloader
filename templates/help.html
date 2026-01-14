@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Ajuda - Flux Downloader{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <section class="hero-section">
+        <div class="hero-content">
+            <h2 class="hero-title">
+                <span class="hero-title-line">Precisa de ajuda?</span>
+                <span class="hero-title-line">Estamos aqui para você</span>
+            </h2>
+            <p class="hero-subtitle">
+                Guia completo para usar o Flux Downloader da melhor forma possível.
+            </p>
+        </div>
+    </section>
+
+    <div class="help-content">
+        <div class="help-grid">
+            <div class="help-card">
+                <div class="help-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h3>Como usar</h3>
+                <ol class="help-steps">
+                    <li>Copie o link do vídeo do YouTube</li>
+                    <li>Cole no campo de entrada acima</li>
+                    <li>Clique em "Verificar vídeo"</li>
+                    <li>Escolha formato e qualidade</li>
+                    <li>Clique em "Iniciar download"</li>
+                </ol>
+            </div>
+
+            <div class="help-card">
+                <div class="help-icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h3>Problemas comuns</h3>
+                <div class="help-problems">
+                    <div class="problem">
+                        <h4>Download não inicia</h4>
+                        <p>Verifique sua conexão com a internet e tente novamente.</p>
+                    </div>
+                    <div class="problem">
+                        <h4>Erro de formato</h4>
+                        <p>Tente baixar como MP3 ou escolha uma qualidade mais baixa.</p>
+                    </div>
+                    <div class="problem">
+                        <h4>Vídeo muito longo</h4>
+                        <p>Vídeos extensos podem demorar. Tenha paciência!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card">
+                <div class="help-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>FFmpeg não instalado</h3>
+                <p>Para downloads em alta qualidade, você precisa do FFmpeg:</p>
+                <ol>
+                    <li>Acesse: <a href="https://www.gyan.dev/ffmpeg/builds/" target="_blank">gyan.dev/ffmpeg/builds</a></li>
+                    <li>Baixe "ffmpeg-release-essentials.7z"</li>
+                    <li>Extraia para: <code>C:\ffmpeg</code></li>
+                    <li>Adicione <code>C:\ffmpeg\bin</code> ao PATH do sistema</li>
+                </ol>
+                <p class="help-note">Ou use apenas as opções "Média" ou "Baixa" qualidade.</p>
+            </div>
+
+            <div class="help-card">
+                <div class="help-icon">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <h3>Uso responsável</h3>
+                <ul class="help-responsible">
+                    <li>Use apenas para conteúdos que você tem permissão</li>
+                    <li>Respeite os direitos autorais dos criadores</li>
+                    <li>Faça backup apenas de seus próprios conteúdos</li>
+                    <li>Use para estudo pessoal ou arquivamento</li>
+                </ul>
+                <p class="help-ethical">Esta ferramenta é para uso ético e educacional.</p>
+            </div>
+        </div>
+
+        <div class="help-footer">
+            <p>Ainda com problemas? <a href="mailto:">Entre em contato</a></p>
+            <p class="help-love">Feito por João Pedro</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

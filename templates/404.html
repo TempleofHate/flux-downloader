@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Página não encontrada - Flux Downloader{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-icon">
+            <i class="fas fa-compass"></i>
+        </div>
+        <h1>404 - Caminho não encontrado</h1>
+        <p class="error-message">
+            Parece que você se perdeu no caminho. Esta página não existe.
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="fas fa-home"></i> Voltar ao início
+            </a>
+            <a href="{{ url_for('help_page') }}" class="btn btn-secondary">
+                <i class="fas fa-question-circle"></i> Ajuda
+            </a>
+        </div>
+        <div class="error-illustration">
+            <div class="illustration-dot"></div>
+            <div class="illustration-line"></div>
+            <div class="illustration-dot"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

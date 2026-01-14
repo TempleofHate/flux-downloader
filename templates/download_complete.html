@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Download Concluído - Flux Downloader{% endblock %}
+
+{% block extra_css %}
+<style>
+    .completion-container {
+        max-width: 600px;
+        margin: 0 auto;
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    
+    .completion-icon {
+        font-size: 5rem;
+        color: var(--organic-green);
+        margin-bottom: 2rem;
+        animation: bounceIn 1s var(--ease-bounce);
+    }
+    
+    .completion-title {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text);
+    }
+    
+    .completion-message {
+        font-size: 1.2rem;
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+    
+    .file-info {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        margin: 2rem 0;
+        text-align: left;
+        border: var(--border);
+    }
+    
+    .file-info h4 {
+        margin-bottom: 1rem;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .file-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .file-detail {
+        background: var(--background);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .file-detail i {
+        color: var(--primary);
+        font-size: 1.2rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 3rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-download-file {
+        background: linear-gradient(135deg, var(--organic-green), var(--organic-blue));
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: var(--radius-md);
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+    }
+    
+    .btn-new-download {
+        background: linear-gradient(135deg, var(--organic-purple), var(--organic-pink));
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: var(--radius-md);
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+    }
+    
+    .download-status {
+        margin: 2rem 0;
+        padding: 1rem;
+        background: var(--surface);
+        border-radius: var(--radius-md);
+    }
+    
+    .download-status p {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .download-tips {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        text-align: left;
+    }
+    
+    .download-tips h3 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
+    
+    .download-tips ul {
+        padding-left: 1.5rem;
+        color: var(--text-secondary);
+    }
+    
+    .download-tips li {
+        margin-bottom: 0.5rem;
+    }
+    
+    @keyframes bounceIn {
+        0% {
+            transform: scale(0);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confetti-container" id="confettiContainer"></div>
+
+<div class="completion-container">
+    <div class="completion-icon">
+        <i class="fas fa-check-circle"></i>
+    </div>
+    
+    <h1 class="completion-title">🎉 Download Concluído!</h1>
+    
+    <div class="download-status" id="downloadStatus">
+        <p id="statusText">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Preparando seu download...</span>
+        </p>
+    </div>
+    
+    <p class="completion-message">
+        Seu arquivo foi processado com sucesso e está pronto para download.
+        <br>
+        Obrigado por usar o Flux Downloader!
+    </p>
+    
+    {% if filename %}
+    <div class="file-info">
+        <h4><i class="fas fa-file-download"></i> Informações do Arquivo</h4>
+        <p><strong>Nome:</strong> {{ filename }}</p>
+        
+        <div class="file-details">
+            <div class="file-detail">
+                <i class="fas fa-folder"></i>
+                <div>
+                    <small>Local</small>
+                    <div>Servidor do Flux Downloader</div>
+                </div>
+            </div>
+            
+            <div class="file-detail">
+                <i class="fas fa-clock"></i>
+                <div>
+                    <small>Horário</small>
+                    <div>{{ download_time }}</div>
+                </div>
+            </div>
+            
+            {% if file_size %}
+            <div class="file-detail">
+                <i class="fas fa-weight-hanging"></i>
+                <div>
+                    <small>Tamanho</small>
+                    <div>{{ file_size }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="action-buttons">
+        <a href="{{ url_for('download_file', filename=filename) }}" class="btn-download-file" id="downloadBtn">
+            <i class="fas fa-download"></i> Baixar Arquivo
+        </a>
+        
+        <a href="{{ url_for('index') }}" class="btn-new-download">
+            <i class="fas fa-plus-circle"></i> Novo Download
+        </a>
+    </div>
+    
+    <div class="download-tips">
+        <h3><i class="fas fa-lightbulb"></i> Dicas</h3>
+        <ul>
+            <li>Clique em "Baixar Arquivo" para salvar no seu dispositivo</li>
+            <li>Se o download não iniciar automaticamente, clique no botão manualmente</li>
+            <li>Você pode fazer quantos downloads quiser!</li>
+            <li>Compartilhe o Flux Downloader com seus amigos</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Criar efeito de confetti
+    function createConfetti() {
+        const container = document.getElementById('confettiContainer');
+        if (!container) return;
+        
+        const colors = [
+            'var(--primary)', 'var(--secondary)', 'var(--organic-green)',
+            'var(--organic-blue)', 'var(--organic-yellow)', 'var(--organic-pink)'
+        ];
+        
+        for (let i = 0; i < 100; i++) {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: fixed;
+                width: ${Math.random() * 10 + 5}px;
+                height: ${Math.random() * 10 + 5}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                top: 100vh;
+                left: ${Math.random() * 100}%;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '0'};
+                opacity: ${Math.random() * 0.7 + 0.3};
+                animation: floatUp ${Math.random() * 3 + 2}s ease-in forwards;
+                animation-delay: ${Math.random() * 1}s;
+                pointer-events: none;
+                z-index: 9999;
+            `;
+            container.appendChild(confetti);
+            
+            // Remover após animação
+            setTimeout(() => {
+                if (confetti.parentNode) {
+                    confetti.remove();
+                }
+            }, 4000);
+        }
+    }
+    
+    // Iniciar download automático
+    function startAutoDownload() {
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusText = document.getElementById('statusText');
+        
+        if (downloadBtn && statusText) {
+            // Aguardar 1 segundo para a página carregar completamente
+            setTimeout(() => {
+                statusText.innerHTML = '<i class="fas fa-download"></i><span>Iniciando download...</span>';
+                
+                // Aguardar mais 0.5 segundos e clicar no botão
+                setTimeout(() => {
+                    downloadBtn.click();
+                    
+                    // Atualizar status após o clique
+                    setTimeout(() => {
+                        statusText.innerHTML = '<i class="fas fa-check-circle"></i><span>Download iniciado! Verifique seu dispositivo.</span>';
+                    }, 1000);
+                }, 500);
+            }, 1000);
+        }
+    }
+    
+    // Remover overlay de loading (se existir)
+    function removeLoadingOverlay() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+    
+    // Iniciar quando a página carregar
+    document.addEventListener('DOMContentLoaded', function() {
+        // Remover overlay de loading
+        removeLoadingOverlay();
+        
+        // Criar confetti
+        createConfetti();
+        
+        // Iniciar download automático
+        startAutoDownload();
+        
+        // Adicionar estilo para animação floatUp
+        if (!document.getElementById('floatUpStyle')) {
+            const style = document.createElement('style');
+            style.id = 'floatUpStyle';
+            style.textContent = `
+                @keyframes floatUp {
+                    0% {
+                        transform: translateY(100vh) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(-100px) rotate(360deg);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Pulsar o ícone
+        const icon = document.querySelector('.completion-icon');
+        if (icon) {
+            setInterval(() => {
+                icon.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    icon.style.transform = 'scale(1)';
+                }, 300);
+            }, 2000);
+        }
+    });
+</script>
+{% endblock %}

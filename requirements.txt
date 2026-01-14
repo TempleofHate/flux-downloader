@@ -1,0 +1,5 @@
+Flask==2.3.3
+yt-dlp==2023.10.13
+gunicorn==20.1.0
+pytube==15.0.0
+python-dotenv==1.0.0
