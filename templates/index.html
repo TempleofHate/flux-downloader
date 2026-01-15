@@ -1,458 +1,516 @@
-{% extends "base.html" %}
-
-{% block title %}Baixar vídeo - Flux Downloader{% endblock %}
-
-{% block extra_css %}
-<style>
-    .video-preview-card {
-        background: var(--card-bg);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        margin: 2rem 0;
-        border: var(--border);
-        transition: all 0.4s var(--ease-bounce);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .video-preview-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--primary), var(--secondary));
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-    
-    .video-preview-card.active::before {
-        opacity: 1;
-    }
-    
-    .format-selector {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 1rem;
-        margin: 2rem 0;
-    }
-    
-    /* Loading overlay */
-    #loadingOverlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s;
-    }
-    
-    #loadingOverlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
-    
-    .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: var(--primary);
-        animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="page-content">
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="hero-content">
-            <h2 class="hero-title">
-                <span class="hero-title-line">Cole um link do YouTube</span>
-                <span class="hero-title-line">e baixe seu vídeo</span>
-            </h2>
-            <p class="hero-subtitle">
-                Simples, rápido e eficiente. Transforme links em arquivos em poucos cliques.
-            </p>
-        </div>
-        
-        <!-- Formulário principal -->
-        <div class="input-card card-hover">
-            <form method="POST" action="/" id="mainForm" class="url-form">
-                <div class="form-group">
-                    <label for="url" class="form-label">
-                        <i class="fas fa-link form-icon"></i>
-                        <span>Link do YouTube</span>
-                    </label>
-                    
-                    <div class="input-with-decoration">
-                        <div class="input-decoration left">
-                            <i class="fas fa-youtube"></i>
-                        </div>
-                        
-                        <input 
-                            type="url" 
-                            id="url" 
-                            name="url" 
-                            placeholder="https://www.youtube.com/watch?v=..." 
-                            required
-                            {% if url %}value="{{ url }}"{% endif %}
-                            class="url-input"
-                            autocomplete="off"
-                        >
-                        
-                        <div class="input-decoration right">
-                            <button type="button" class="paste-btn" id="pasteBtn" title="Colar da área de transferência">
-                                <i class="fas fa-paste"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-primary btn-animate" id="previewBtn">
-                    <span class="btn-content">
-                        <i class="fas fa-search btn-icon"></i>
-                        <span>Verificar vídeo</span>
-                    </span>
-                </button>
-            </form>
-        </div>
-    </section>
-    
-    <!-- Seção de Preview (aparece após verificação) -->
-    {% if show_download %}
-    <section class="preview-section animate-in">
-        <div class="section-header">
-            <h3>
-                <i class="fas fa-eye"></i>
-                <span>Pré-visualização do conteúdo</span>
-            </h3>
-            <p class="section-subtitle">Confira se é isso que você procura</p>
-        </div>
-        
-        <div class="video-preview-card active">
-            <div class="video-preview-content">
-                <!-- Thumbnail -->
-                {% if video_info.thumbnail %}
-                <div class="video-thumbnail-container">
-                    <img src="{{ video_info.thumbnail }}" alt="Thumbnail do vídeo" class="video-thumbnail" onerror="this.style.display='none'">
-                    <div class="thumbnail-overlay">
-                        <div class="duration-badge">
-                            <i class="fas fa-clock"></i>
-                            {{ video_info.duration_str }}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Detalhes do vídeo -->
-                <div class="video-details">
-                    <h4 class="video-title">{{ video_info.title }}</h4>
-                    
-                    <div class="video-meta">
-                        <div class="meta-item">
-                            <i class="fas fa-user-circle"></i>
-                            <span>{{ video_info.channel }}</span>
-                        </div>
-                        
-                        <div class="meta-item">
-                            <i class="fas fa-eye"></i>
-                            <span>{{ "{:,}".format(video_info.views) }} visualizações</span>
-                        </div>
-                        
-                        <div class="meta-item">
-                            <i class="fas fa-wind"></i>
-                            <span>{{ video_info.duration_str }} de conteúdo</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Formulário de download -->
-            <form method="POST" action="/download" id="downloadForm" class="download-form">
-                <input type="hidden" name="url" value="{{ url }}">
-                
-                <!-- Escolha de formato -->
-                <div class="form-section">
-                    <h4 class="form-section-title">
-                        <i class="fas fa-palette"></i>
-                        <span>Escolha o formato:</span>
-                    </h4>
-                    
-                    <div class="format-selector">
-                        <label class="format-option" data-format="mp4">
-                            <input type="radio" name="format" value="mp4" checked class="format-radio">
-                            <div class="format-card">
-                                <div class="format-icon">
-                                    <i class="fas fa-film"></i>
-                                </div>
-                                <h5>Vídeo (MP4)</h5>
-                                <p>Imagem + som, completo</p>
-                            </div>
-                        </label>
-                        
-                        <label class="format-option" data-format="mp3">
-                            <input type="radio" name="format" value="mp3" class="format-radio">
-                            <div class="format-card">
-                                <div class="format-icon">
-                                    <i class="fas fa-music"></i>
-                                </div>
-                                <h5>Áudio (MP3)</h5>
-                                <p>Apenas o som, leve</p>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Seletor de qualidade (apenas para vídeo) -->
-                <div class="form-section quality-section active" id="qualitySection">
-                    <h4 class="form-section-title">
-                        <i class="fas fa-sliders-h"></i>
-                        <span>Qualidade do vídeo</span>
-                    </h4>
-                    
-                    <div class="quality-selector">
-                        <div class="quality-options">
-                            <label class="quality-option" data-quality="high">
-                                <input type="radio" name="quality" value="high" id="qualityHigh">
-                                <div class="quality-card">
-                                    <div class="quality-visual">
-                                        <div class="quality-bar" style="height: 90%"></div>
-                                        <div class="quality-bar" style="height: 95%"></div>
-                                        <div class="quality-bar" style="height: 100%"></div>
-                                    </div>
-                                    <div class="quality-info">
-                                        <h6>Alta Qualidade</h6>
-                                        <p>Melhor qualidade disponível</p>
-                                        {% if not has_ffmpeg %}
-                                        <small class="quality-note">
-                                            <i class="fas fa-info-circle"></i>
-                                            Requer FFmpeg instalado
-                                        </small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </label>
-                            
-                            <label class="quality-option" data-quality="medium">
-                                <input type="radio" name="quality" value="medium" checked id="qualityMedium">
-                                <div class="quality-card">
-                                    <div class="quality-visual">
-                                        <div class="quality-bar" style="height: 70%"></div>
-                                        <div class="quality-bar" style="height: 75%"></div>
-                                        <div class="quality-bar" style="height: 80%"></div>
-                                    </div>
-                                    <div class="quality-info">
-                                        <h6>Média (720p)</h6>
-                                        <p>Balanço qualidade/tamanho</p>
-                                        <small class="quality-note">
-                                            <i class="fas fa-check-circle"></i>
-                                            Funciona sem FFmpeg
-                                        </small>
-                                    </div>
-                                </div>
-                            </label>
-                            
-                            <label class="quality-option" data-quality="low">
-                                <input type="radio" name="quality" value="low" id="qualityLow">
-                                <div class="quality-card">
-                                    <div class="quality-visual">
-                                        <div class="quality-bar" style="height: 50%"></div>
-                                        <div class="quality-bar" style="height: 55%"></div>
-                                        <div class="quality-bar" style="height: 60%"></div>
-                                    </div>
-                                    <div class="quality-info">
-                                        <h6>Baixa (480p)</h6>
-                                        <p>Para conexões lentas</p>
-                                        <small class="quality-note">
-                                            <i class="fas fa-bolt"></i>
-                                            Download rápido
-                                        </small>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                        
-                        {% if not has_ffmpeg %}
-                        <div class="quality-info-panel" id="qualityInfo">
-                            <p>
-                                <i class="fas fa-lightbulb"></i>
-                                <strong>Nota:</strong> FFmpeg não encontrado. Para alta qualidade, instale o FFmpeg ou use qualidade média/baixa.
-                            </p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <!-- Botão de download -->
-                <div class="download-action">
-                    <button type="submit" class="btn btn-download btn-animate" id="downloadBtn">
-                        <span class="btn-content">
-                            <i class="fas fa-cloud-download-alt btn-icon"></i>
-                            <span>Iniciar download</span>
-                        </span>
-                    </button>
-                    
-                    <div class="download-note">
-                        <i class="fas fa-info-circle"></i>
-                        <p>O download começará imediatamente. Após conclusão, você será redirecionado para a página de confirmação.</p>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </section>
-    {% endif %}
-</div>
-
-<!-- Loading Overlay -->
-<div id="loadingOverlay">
-    <div class="loading-spinner"></div>
-    <div style="margin-left: 20px; color: white;">
-        <h3 style="margin-bottom: 10px;">Processando download...</h3>
-        <p>Por favor, aguarde enquanto baixamos seu vídeo.</p>
-        <p style="font-size: 0.9em; opacity: 0.8;">Isso pode levar alguns minutos dependendo do tamanho do vídeo.</p>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Elementos DOM
-    const formatOptions = document.querySelectorAll('input[name="format"]');
-    const qualitySection = document.getElementById('qualitySection');
-    const downloadForm = document.getElementById('downloadForm');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const pasteBtn = document.getElementById('pasteBtn');
-    const urlInput = document.getElementById('url');
-    
-    // Gerenciar visibilidade da seção de qualidade
-    if (formatOptions.length && qualitySection) {
-        formatOptions.forEach(option => {
-            option.addEventListener('change', function(e) {
-                const isVideo = e.target.value === 'mp4';
-                
-                if (isVideo) {
-                    qualitySection.style.display = 'block';
-                    setTimeout(() => {
-                        qualitySection.style.opacity = '1';
-                        qualitySection.style.transform = 'translateY(0)';
-                    }, 10);
-                } else {
-                    qualitySection.style.opacity = '0';
-                    qualitySection.style.transform = 'translateY(-10px)';
-                    setTimeout(() => {
-                        qualitySection.style.display = 'none';
-                    }, 300);
-                }
-            });
-        });
-        
-        // Inicializar estado
-        const selectedFormat = document.querySelector('input[name="format"]:checked');
-        if (selectedFormat && selectedFormat.value === 'mp3') {
-            qualitySection.style.display = 'none';
-            qualitySection.style.opacity = '0';
-        }
-    }
-    
-    // Gerenciar envio do formulário de download
-    if (downloadForm) {
-        downloadForm.addEventListener('submit', function(e) {
-            // Validar formulário
-            if (!validateForm()) {
-                e.preventDefault();
-                return;
-            }
-            
-            // Mostrar loading
-            if (loadingOverlay) {
-                loadingOverlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-            
-            // Desabilitar botão para evitar múltiplos cliques
-            const downloadBtn = document.getElementById('downloadBtn');
-            if (downloadBtn) {
-                downloadBtn.disabled = true;
-                downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-            }
-            
-            // Continuar com o envio
-            return true;
-        });
-    }
-    
-    // Botão de colar
-    if (pasteBtn && urlInput) {
-        pasteBtn.addEventListener('click', async function() {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text.includes('youtube.com') || text.includes('youtu.be')) {
-                    urlInput.value = text;
-                    showToast('Link colado com sucesso!', 'success');
-                } else {
-                    showToast('Isso não parece um link do YouTube', 'error');
-                }
-            } catch (err) {
-                console.error('Erro ao colar:', err);
-                showToast('Não foi possível acessar a área de transferência', 'error');
-            }
-        });
-    }
-    
-    // Função de validação
-    function validateForm() {
-        const urlInput = document.getElementById('url');
-        if (!urlInput) return true;
-        
-        const url = urlInput.value;
-        if (!url) {
-            showToast('Por favor, insira um link do YouTube', 'error');
-            return false;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux Downloader - Baixar vídeos do YouTube</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --card-bg: #ffffff;
+            --bg-color: #f8fafc;
+            --text-color: #1f2937;
+            --border: 1px solid #e5e7eb;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
         }
         
-        if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
-            showToast('Por favor, insira um link válido do YouTube', 'error');
-            return false;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        return true;
-    }
-    
-    // Função para mostrar mensagens toast
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `
-            <div class="toast-content">
-                <i class="fas fa-${getToastIcon(type)}"></i>
-                <span>${message}</span>
-            </div>
-            <button class="toast-close">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
         
-        toast.style.cssText = `
+        .page-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 4rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius-lg);
+            margin-bottom: 2rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+        
+        .hero-title-line {
+            display: block;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+        
+        /* Input Card */
+        .input-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            max-width: 800px;
+            margin: -3rem auto 0;
+            position: relative;
+            z-index: 10;
+            border: var(--border);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+        
+        .form-icon {
+            color: var(--primary);
+        }
+        
+        .input-with-decoration {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        
+        .input-decoration {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1rem;
+            background: #f3f4f6;
+            color: #6b7280;
+            border: var(--border);
+        }
+        
+        .input-decoration.left {
+            left: 0;
+            border-radius: var(--radius) 0 0 var(--radius);
+            border-right: none;
+        }
+        
+        .input-decoration.right {
+            right: 0;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            border-left: none;
+        }
+        
+        .url-input {
+            width: 100%;
+            padding: 1rem 3.5rem;
+            font-size: 1rem;
+            border: var(--border);
+            border-radius: var(--radius);
+            transition: var(--transition);
+            background: white;
+        }
+        
+        .url-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .paste-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+        
+        .paste-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-size: 1.1rem;
+            padding: 1.25rem 2.5rem;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-animate {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .btn-icon {
+            font-size: 1.2em;
+        }
+        
+        /* Video Preview Card */
+        .video-preview-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin: 2rem 0;
+            border: var(--border);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .video-preview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .video-preview-card.active::before {
+            opacity: 1;
+        }
+        
+        .video-preview-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .video-preview-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .video-thumbnail-container {
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .video-thumbnail {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .thumbnail-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 1rem;
+            color: white;
+        }
+        
+        .duration-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0,0,0,0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .video-details {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .video-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+        
+        .video-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: auto;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6b7280;
+        }
+        
+        /* Format Selector */
+        .format-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .format-option {
+            cursor: pointer;
+        }
+        
+        .format-radio {
+            display: none;
+        }
+        
+        .format-card {
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+            background: white;
+        }
+        
+        .format-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .format-radio:checked + .format-card {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .format-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .format-card h5 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .format-card p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        /* Quality Selector */
+        .quality-section {
+            transition: all 0.3s ease;
+        }
+        
+        .quality-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .quality-option {
+            cursor: pointer;
+        }
+        
+        .quality-option input[type="radio"] {
+            display: none;
+        }
+        
+        .quality-card {
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            transition: var(--transition);
+            background: white;
+        }
+        
+        .quality-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .quality-option input:checked + .quality-card {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .quality-visual {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 60px;
+        }
+        
+        .quality-bar {
+            width: 8px;
+            background: linear-gradient(to top, var(--primary), var(--secondary));
+            border-radius: 2px;
+        }
+        
+        .quality-info {
+            flex: 1;
+        }
+        
+        .quality-info h6 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .quality-info p {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .quality-note {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            color: var(--primary);
+        }
+        
+        /* Download Action */
+        .download-action {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: var(--border);
+        }
+        
+        .download-note {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f3f4f6;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .download-note i {
+            color: var(--primary);
+            margin-top: 0.25rem;
+        }
+        
+        /* Loading Overlay */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        #loadingOverlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Toast */
+        .toast {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3B82F6'};
-            color: white;
             padding: 12px 20px;
             border-radius: 8px;
             display: flex;
@@ -463,38 +521,23 @@ document.addEventListener('DOMContentLoaded', function() {
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             animation: slideInRight 0.3s ease;
             max-width: 400px;
-        `;
+        }
         
-        document.body.appendChild(toast);
+        .toast-success {
+            background: var(--success);
+            color: white;
+        }
         
-        // Botão de fechar
-        const closeBtn = toast.querySelector('.toast-close');
-        closeBtn.addEventListener('click', () => {
-            toast.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        });
+        .toast-error {
+            background: var(--danger);
+            color: white;
+        }
         
-        // Auto-remover após 5 segundos
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.style.animation = 'slideOutRight 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }
-        }, 5000);
-    }
-    
-    function getToastIcon(type) {
-        const icons = {
-            success: 'check-circle',
-            error: 'exclamation-circle',
-            info: 'info-circle'
-        };
-        return icons[type] || 'info-circle';
-    }
-    
-    // Adicionar estilos para animações do toast
-    const style = document.createElement('style');
-    style.textContent = `
+        .toast-info {
+            background: var(--primary);
+            color: white;
+        }
+        
         @keyframes slideInRight {
             from {
                 transform: translateX(100%);
@@ -536,89 +579,480 @@ document.addEventListener('DOMContentLoaded', function() {
             align-items: center;
             gap: 8px;
         }
-    `;
-    document.head.appendChild(style);
+        
+        /* Animations */
+        .animate-in {
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Error Message */
+        .error-message {
+            background: #fee;
+            color: var(--danger);
+            padding: 1rem;
+            border-radius: var(--radius);
+            border-left: 4px solid var(--danger);
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .error-message i {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-content">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <h2 class="hero-title">
+                    <span class="hero-title-line">Cole um link do YouTube</span>
+                    <span class="hero-title-line">e baixe seu vídeo</span>
+                </h2>
+                <p class="hero-subtitle">
+                    Simples, rápido e eficiente. Transforme links em arquivos em poucos cliques.
+                </p>
+            </div>
+            
+            <!-- Formulário principal -->
+            <div class="input-card card-hover">
+                <form method="POST" action="/" id="mainForm" class="url-form">
+                    {% if error %}
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ error }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="form-group">
+                        <label for="url" class="form-label">
+                            <i class="fas fa-link form-icon"></i>
+                            <span>Link do YouTube</span>
+                        </label>
+                        
+                        <div class="input-with-decoration">
+                            <div class="input-decoration left">
+                                <i class="fas fa-youtube"></i>
+                            </div>
+                            
+                            <input 
+                                type="url" 
+                                id="url" 
+                                name="url" 
+                                placeholder="https://www.youtube.com/watch?v=..." 
+                                required
+                                {% if url %}value="{{ url }}"{% endif %}
+                                class="url-input"
+                                autocomplete="off"
+                            >
+                            
+                            <div class="input-decoration right">
+                                <button type="button" class="paste-btn" id="pasteBtn" title="Colar da área de transferência">
+                                    <i class="fas fa-paste"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-animate" id="previewBtn">
+                        <span class="btn-content">
+                            <i class="fas fa-search btn-icon"></i>
+                            <span>Verificar vídeo</span>
+                        </span>
+                    </button>
+                </form>
+            </div>
+        </section>
+        
+        <!-- Seção de Preview (aparece após verificação) -->
+        {% if show_download %}
+        <section class="preview-section animate-in">
+            <div class="section-header">
+                <h3>
+                    <i class="fas fa-eye"></i>
+                    <span>Pré-visualização do conteúdo</span>
+                </h3>
+                <p class="section-subtitle">Confira se é isso que você procura</p>
+            </div>
+            
+            <div class="video-preview-card active">
+                <div class="video-preview-content">
+                    <!-- Thumbnail -->
+                    {% if video_info.thumbnail %}
+                    <div class="video-thumbnail-container">
+                        <img src="{{ video_info.thumbnail }}" alt="Thumbnail do vídeo" class="video-thumbnail" onerror="this.style.display='none'">
+                        <div class="thumbnail-overlay">
+                            <div class="duration-badge">
+                                <i class="fas fa-clock"></i>
+                                {{ video_info.duration_str }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Detalhes do vídeo -->
+                    <div class="video-details">
+                        <h4 class="video-title">{{ video_info.title }}</h4>
+                        
+                        <div class="video-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-user-circle"></i>
+                                <span>{{ video_info.channel }}</span>
+                            </div>
+                            
+                            <div class="meta-item">
+                                <i class="fas fa-eye"></i>
+                                <span>{{ "{:,}".format(video_info.views) }} visualizações</span>
+                            </div>
+                            
+                            <div class="meta-item">
+                                <i class="fas fa-wind"></i>
+                                <span>{{ video_info.duration_str }} de conteúdo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Formulário de download -->
+                <form method="POST" action="/download" id="downloadForm" class="download-form">
+                    <input type="hidden" name="url" value="{{ url }}">
+                    
+                    <!-- Escolha de formato -->
+                    <div class="form-section">
+                        <h4 class="form-section-title">
+                            <i class="fas fa-palette"></i>
+                            <span>Escolha o formato:</span>
+                        </h4>
+                        
+                        <div class="format-selector">
+                            <label class="format-option" data-format="mp4">
+                                <input type="radio" name="format" value="mp4" checked class="format-radio">
+                                <div class="format-card">
+                                    <div class="format-icon">
+                                        <i class="fas fa-film"></i>
+                                    </div>
+                                    <h5>Vídeo (MP4)</h5>
+                                    <p>Imagem + som, completo</p>
+                                </div>
+                            </label>
+                            
+                            <label class="format-option" data-format="mp3">
+                                <input type="radio" name="format" value="mp3" class="format-radio">
+                                <div class="format-card">
+                                    <div class="format-icon">
+                                        <i class="fas fa-music"></i>
+                                    </div>
+                                    <h5>Áudio (MP3)</h5>
+                                    <p>Apenas o som, leve</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Seletor de qualidade (apenas para vídeo) -->
+                    <div class="form-section quality-section active" id="qualitySection">
+                        <h4 class="form-section-title">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Qualidade do vídeo</span>
+                        </h4>
+                        
+                        <div class="quality-selector">
+                            <div class="quality-options">
+                                <label class="quality-option" data-quality="high">
+                                    <input type="radio" name="quality" value="high" id="qualityHigh">
+                                    <div class="quality-card">
+                                        <div class="quality-visual">
+                                            <div class="quality-bar" style="height: 90%"></div>
+                                            <div class="quality-bar" style="height: 95%"></div>
+                                            <div class="quality-bar" style="height: 100%"></div>
+                                        </div>
+                                        <div class="quality-info">
+                                            <h6>Alta Qualidade</h6>
+                                            <p>Melhor qualidade disponível</p>
+                                        </div>
+                                    </div>
+                                </label>
+                                
+                                <label class="quality-option" data-quality="medium">
+                                    <input type="radio" name="quality" value="medium" checked id="qualityMedium">
+                                    <div class="quality-card">
+                                        <div class="quality-visual">
+                                            <div class="quality-bar" style="height: 70%"></div>
+                                            <div class="quality-bar" style="height: 75%"></div>
+                                            <div class="quality-bar" style="height: 80%"></div>
+                                        </div>
+                                        <div class="quality-info">
+                                            <h6>Média (720p)</h6>
+                                            <p>Balanço qualidade/tamanho</p>
+                                        </div>
+                                    </div>
+                                </label>
+                                
+                                <label class="quality-option" data-quality="low">
+                                    <input type="radio" name="quality" value="low" id="qualityLow">
+                                    <div class="quality-card">
+                                        <div class="quality-visual">
+                                            <div class="quality-bar" style="height: 50%"></div>
+                                            <div class="quality-bar" style="height: 55%"></div>
+                                            <div class="quality-bar" style="height: 60%"></div>
+                                        </div>
+                                        <div class="quality-info">
+                                            <h6>Baixa (480p)</h6>
+                                            <p>Para conexões lentas</p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botão de download -->
+                    <div class="download-action">
+                        <button type="submit" class="btn btn-download btn-animate" id="downloadBtn">
+                            <span class="btn-content">
+                                <i class="fas fa-cloud-download-alt btn-icon"></i>
+                                <span>Iniciar download</span>
+                            </span>
+                        </button>
+                        
+                        <div class="download-note">
+                            <i class="fas fa-info-circle"></i>
+                            <p>O download começará imediatamente. Após conclusão, você será redirecionado para a página de confirmação.</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+        {% endif %}
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div style="margin-left: 20px; color: white;">
+            <h3 style="margin-bottom: 10px;">Processando...</h3>
+            <p id="loadingMessage">Por favor, aguarde</p>
+        </div>
+    </div>
     
-    // Efeito de digitação no input
-    if (urlInput && !urlInput.value) {
-        let typingTimer;
-        const examples = [
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "https://youtu.be/9bZkp7q19f0",
-            "https://www.youtube.com/watch?v=JGwWNGJdvx8"
-        ];
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elementos DOM
+        const formatOptions = document.querySelectorAll('input[name="format"]');
+        const qualitySection = document.getElementById('qualitySection');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const urlInput = document.getElementById('url');
         
-        let exampleIndex = 0;
-        let charIndex = 0;
-        let isTyping = true;
-        
-        function typeExample() {
-            if (isTyping) {
-                if (charIndex < examples[exampleIndex].length) {
-                    urlInput.placeholder = examples[exampleIndex].substring(0, charIndex + 1);
-                    charIndex++;
-                    typingTimer = setTimeout(typeExample, 50);
-                } else {
-                    isTyping = false;
-                    typingTimer = setTimeout(eraseExample, 2000);
-                }
+        // Gerenciar visibilidade da seção de qualidade
+        if (formatOptions.length && qualitySection) {
+            formatOptions.forEach(option => {
+                option.addEventListener('change', function(e) {
+                    const isVideo = e.target.value === 'mp4';
+                    
+                    if (isVideo) {
+                        qualitySection.style.display = 'block';
+                        setTimeout(() => {
+                            qualitySection.style.opacity = '1';
+                            qualitySection.style.transform = 'translateY(0)';
+                        }, 10);
+                    } else {
+                        qualitySection.style.opacity = '0';
+                        qualitySection.style.transform = 'translateY(-10px)';
+                        setTimeout(() => {
+                            qualitySection.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            });
+            
+            // Inicializar estado
+            const selectedFormat = document.querySelector('input[name="format"]:checked');
+            if (selectedFormat && selectedFormat.value === 'mp3') {
+                qualitySection.style.display = 'none';
+                qualitySection.style.opacity = '0';
             }
         }
         
-        function eraseExample() {
-            if (!isTyping) {
-                if (charIndex > 0) {
-                    urlInput.placeholder = examples[exampleIndex].substring(0, charIndex - 1);
-                    charIndex--;
-                    typingTimer = setTimeout(eraseExample, 30);
-                } else {
-                    isTyping = true;
-                    exampleIndex = (exampleIndex + 1) % examples.length;
-                    typingTimer = setTimeout(typeExample, 500);
+        // Botão de colar
+        if (pasteBtn && urlInput) {
+            pasteBtn.addEventListener('click', async function() {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text.includes('youtube.com') || text.includes('youtu.be')) {
+                        urlInput.value = text;
+                        showToast('Link colado com sucesso!', 'success');
+                    } else {
+                        showToast('Isso não parece um link do YouTube', 'error');
+                    }
+                } catch (err) {
+                    console.error('Erro ao colar:', err);
+                    showToast('Não foi possível acessar a área de transferência', 'error');
                 }
-            }
+            });
         }
         
-        // Iniciar quando o input estiver em foco
-        urlInput.addEventListener('focus', () => {
-            if (!urlInput.value) {
-                typeExample();
+        // Efeito de digitação no input
+        if (urlInput && !urlInput.value) {
+            let typingTimer;
+            const examples = [
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "https://youtu.be/9bZkp7q19f0",
+                "https://www.youtube.com/watch?v=JGwWNGJdvx8"
+            ];
+            
+            let exampleIndex = 0;
+            let charIndex = 0;
+            let isTyping = true;
+            
+            function typeExample() {
+                if (isTyping) {
+                    if (charIndex < examples[exampleIndex].length) {
+                        urlInput.placeholder = examples[exampleIndex].substring(0, charIndex + 1);
+                        charIndex++;
+                        typingTimer = setTimeout(typeExample, 50);
+                    } else {
+                        isTyping = false;
+                        typingTimer = setTimeout(eraseExample, 2000);
+                    }
+                }
             }
-        });
-        
-        urlInput.addEventListener('blur', () => {
-            clearTimeout(typingTimer);
-            urlInput.placeholder = "https://www.youtube.com/watch?v=...";
-        });
-        
-        urlInput.addEventListener('input', () => {
-            if (urlInput.value) {
+            
+            function eraseExample() {
+                if (!isTyping) {
+                    if (charIndex > 0) {
+                        urlInput.placeholder = examples[exampleIndex].substring(0, charIndex - 1);
+                        charIndex--;
+                        typingTimer = setTimeout(eraseExample, 30);
+                    } else {
+                        isTyping = true;
+                        exampleIndex = (exampleIndex + 1) % examples.length;
+                        typingTimer = setTimeout(typeExample, 500);
+                    }
+                }
+            }
+            
+            urlInput.addEventListener('focus', () => {
+                if (!urlInput.value) {
+                    typeExample();
+                }
+            });
+            
+            urlInput.addEventListener('blur', () => {
                 clearTimeout(typingTimer);
                 urlInput.placeholder = "https://www.youtube.com/watch?v=...";
-            }
-        });
-    }
-    
-    // Selecionar automaticamente cards ao clicar
-    document.querySelectorAll('.format-card, .quality-card').forEach(card => {
-        card.addEventListener('click', function(e) {
-            if (!e.target.closest('input')) {
-                const radio = this.closest('label').querySelector('input[type="radio"]');
-                if (radio) {
-                    radio.checked = true;
-                    radio.dispatchEvent(new Event('change'));
+            });
+            
+            urlInput.addEventListener('input', () => {
+                if (urlInput.value) {
+                    clearTimeout(typingTimer);
+                    urlInput.placeholder = "https://www.youtube.com/watch?v=...";
                 }
-            }
+            });
+        }
+        
+        // Selecionar automaticamente cards ao clicar
+        document.querySelectorAll('.format-card, .quality-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (!e.target.closest('input')) {
+                    const radio = this.closest('label').querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
         });
+        
+        // Função para mostrar mensagens toast
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas fa-${getToastIcon(type)}"></i>
+                    <span>${message}</span>
+                </div>
+                <button class="toast-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            const closeBtn = toast.querySelector('.toast-close');
+            closeBtn.addEventListener('click', () => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            });
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideOutRight 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+        
+        function getToastIcon(type) {
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                info: 'info-circle'
+            };
+            return icons[type] || 'info-circle';
+        }
+        
+        // Adicionar estilos para animações do toast
+        if (!document.querySelector('#toast-styles')) {
+            const style = document.createElement('style');
+            style.id = 'toast-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Remover overlay de loading se estiver ativo
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
     });
-    
-    // REMOVER OVERLAY DE LOADING AO VOLTAR PARA A PÁGINA
-    // Esta é a modificação crítica para resolver o problema do overlay travado
-    // NÃO redeclarar a variável loadingOverlay, usar a que já existe
-    if (loadingOverlay) {
-        loadingOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-});
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>
